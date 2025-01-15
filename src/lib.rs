@@ -2,6 +2,7 @@ use clap::{App, Arg};
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
+use std::ops::Not;
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
@@ -9,7 +10,7 @@ type MyResult<T> = Result<T, Box<dyn Error>>;
 pub struct Config {
     files: Vec<String>,
     number_lines: bool,
-    _number_nonblank_lines: bool,
+    number_nonblank_lines: bool,
 }
 
 pub fn get_args() -> MyResult<Config> {
@@ -42,7 +43,7 @@ pub fn get_args() -> MyResult<Config> {
     Ok(Config {
         files: matches.values_of_lossy("files").unwrap(),
         number_lines: matches.is_present("number"),
-        _number_nonblank_lines: matches.is_present("number-nonblank"),
+        number_nonblank_lines: matches.is_present("number-nonblank"),
     })
 }
 
@@ -51,11 +52,20 @@ pub fn run(config: Config) -> MyResult<()> {
         match open(&filename) {
             Err(e) => eprintln!("{}: {}", filename, e),
             Ok(file) => {
+                let mut last_line_number = 0;
+
                 for (line_number, line_result) in file.lines().enumerate() {
                     let line = line_result?;
 
                     if config.number_lines {
                         println!("{:>6}\t{}", line_number + 1, line);
+                    } else if config.number_nonblank_lines {
+                        if line.is_empty().not() {
+                            last_line_number += 1;
+                            println!("{:>6}\t{}", last_line_number, line);
+                        } else {
+                            println!();
+                        }
                     } else {
                         println!("{}", line);
                     }
