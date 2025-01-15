@@ -3,14 +3,14 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 
+type MyResult<T> = Result<T, Box<dyn Error>>;
+
 #[derive(Debug)]
 pub struct Config {
     files: Vec<String>,
-    _number_lines: bool,
+    number_lines: bool,
     _number_nonblank_lines: bool,
 }
-
-type MyResult<T> = Result<T, Box<dyn Error>>;
 
 pub fn get_args() -> MyResult<Config> {
     let matches = App::new("catr")
@@ -41,7 +41,7 @@ pub fn get_args() -> MyResult<Config> {
 
     Ok(Config {
         files: matches.values_of_lossy("files").unwrap(),
-        _number_lines: matches.is_present("number"),
+        number_lines: matches.is_present("number"),
         _number_nonblank_lines: matches.is_present("number-nonblank"),
     })
 }
@@ -49,11 +49,19 @@ pub fn get_args() -> MyResult<Config> {
 pub fn run(config: Config) -> MyResult<()> {
     for filename in config.files {
         match open(&filename) {
-            Err(err) => eprintln!("Failed to open {}: {}", filename, err),
+            Err(e) => eprintln!("{}: {}", filename, e),
             Ok(file) => {
+                let mut line_number = 0;
+
                 for line_result in file.lines() {
                     let line = line_result?;
-                    println!("{}", line);
+                    line_number += 1;
+
+                    if config.number_lines {
+                        println!("{:>6}\t{}", line_number, line);
+                    } else {
+                        println!("{}", line);
+                    }
                 }
             }
         }
