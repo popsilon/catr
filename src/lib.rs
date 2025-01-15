@@ -51,14 +51,11 @@ pub fn run(config: Config) -> MyResult<()> {
         match open(&filename) {
             Err(e) => eprintln!("{}: {}", filename, e),
             Ok(file) => {
-                let mut line_number = 0;
-
-                for line_result in file.lines() {
+                for (line_number, line_result) in file.lines().enumerate() {
                     let line = line_result?;
-                    line_number += 1;
 
                     if config.number_lines {
-                        println!("{:>6}\t{}", line_number, line);
+                        println!("{:>6}\t{}", line_number + 1, line);
                     } else {
                         println!("{}", line);
                     }
